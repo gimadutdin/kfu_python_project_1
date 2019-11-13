@@ -8,7 +8,7 @@ def start_message(message):
 
 @bot.message_handler(commands=['help'])
 def help_message(message):
-    bot.send_message(message.chat.id, '/login_stud фио, номер_зачетки - вход для студента')
+    bot.send_message(message.chat.id, '/login_stud фио, /login_admin, /join_course, номер_зачетки - вход для студента')
 
 
 
@@ -35,6 +35,18 @@ def login_stud_message(message):
         
     bot.send_message(message.chat.id, ans)
 
+@bot.message_handler(content_types=['login_admin'])
+def login_admin_message(message):
+    
+    arr = message.text.split(' ')
+    login = arr[1] + ' ' + arr[2] + ' ' + arr[3]
+    password = arr[4]
+
+    cursor = conn.cursor()
+    sel_res = cursor.execute('select * from admins where login=? and password=?', (login, int(password)))
+
+    
+    
 @bot.message_handler(content_types=['text'])
 def send_text(message):
     json = yandex_translate_text(message.text)
