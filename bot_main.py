@@ -13,11 +13,11 @@ def start_message(message):
 
 @bot.message_handler(commands=['help'])
 def help_message(message):
-    bot.send_message(message.chat.id, '/login_stud - вход для студентов, /login_admin - вход для преподавателей, /join_course')
+    bot.send_message(message.chat.id, '/join - записаться(войти) на курс, /login_admin - вход для преподавателей, /getinfo - получить информацию для студента, /getrating - посмотреть свой рейтинг')
 
 
 
-@bot.message_handler(commands=['login_stud'])
+@bot.message_handler(commands=['join'])
 def login_stud_message(message):
     bot.send_message(message.from_user.id, "Введите имя: ");
     bot.register_next_step_handler(message, get_name);
@@ -42,29 +42,27 @@ def get_patronymic(message):
 
 def get_num_zach(message):
     global num_zach;
-    num_zach = message.text;
-
+    num_zach = message.text;    
     con = sqlite3.connect("bot_database.db")
     cur = con.cursor()
-    cur.execute("DELETE FROM students WHERE telegram_id=?", (str(message.from_user.id),))
-    cur.execute("INSERT INTO students(telegram_id, name, surname, patronymic, num_zach) VALUES (?,?,?,?,?)", (str(message.from_user.id), name, surname, patronymic, num_zach))
-    con.commit()
+    sel_res = cur.execute('SELECT id FROM students WHERE name=? and surname=? and patronymic=? and num_zach=?', (name, surname, patronymic, num_zach))
+    first_row = cur.fetchone()
+    if first_row != None:#если студент найден то мы должны привязать его телеграм айди
+        tid_was = cur.execute('SELECT id FROM joined WHERE telegram_id=?', (message.from_user.id,))
+        tid_was_row = cur.fetchone()
+        if tid_was_row != None:#если к этому телеграм айди уже был кто то привязан то перепривязать
+            cur.execute('UPDATE joined SET id=? WHERE telegram_id=?', (first_row[0], message.from_user.id))
+            con.commit()
+        else:#если к этому телеграм айди еще никто не был привязан
+            cur.execute('INSERT INTO joined(id, telegram_id) VALUES (?, ?)', (first_row[0], message.from_user.id))
+            con.commit()
+        bot.send_message(message.from_user.id, 'Вы записались вошли и записаны на курс');
+    else:
+        bot.send_message(message.from_user.id, 'Студента с такими данными не существует!');
     cur.close()
     con.close()
     
-"""
-@bot.message_handler(content_types=['login_admin'])
-def login_admin_message(message):
-    
-    arr = message.text.split(' ')
-    login = arr[1] + ' ' + arr[2] + ' ' + arr[3]
-    password = arr[4]
-
-    cursor = conn.cursor()
-    sel_res = cursor.execute('select * from admins where login=? and password=?', (login, int(password)))
-"""
-    
-    
+#отладочная функция..
 @bot.message_handler(content_types=['text'])
 def send_text(message):
     #print(message.from_user.id)
@@ -73,43 +71,20 @@ def send_text(message):
     for row in cur.execute('SELECT * FROM students'):# where telegram_id=?', (str(message.from_user.id),)):
         print(row)
     print("\n")
+
+    for row in cur.execute('SELECT * FROM joined'):# where telegram_id=?', (str(message.from_user.id),)):
+        print(row)
+    print("\n")
+    
     cur.close()
     con.close()
 
 
 
-################################################################
+
 if __name__ == "__main__":
-    conn = sqlite3.connect("bot_database.db") # или :memory: чтобы сохранить в RAM
-    cursor = conn.cursor()
-    # Создание таблицы
-    cursor.execute("""CREATE TABLE if not exists students
-                      (id integer primary key,
-                       telegram_id text,
-                       name text,
-                       surname text,
-                       patronymic text,
-                       num_zach text)
-                   """)
-
-    conn.commit()
-
-    #stud = [('Альбертов Альберт Альбертович', 1337),
-     #       ('Обамов Барак Баракович', 15552),
-      #      ('Джонов Джон Джонович', 73336)]
-    #cursor.executemany("INSERT INTO students(fio, num_zach) VALUES (?,?)", stud)
-    #conn.commit()
-
-    #for row in cursor.execute('SELECT * FROM students'):
-        #print(row)
 
 
+    
     bot.polling()
 
-
-    cursor.close()
-    conn.close()
-    #cursor.close()
-    #conn.close()
-    #conn = sqlite3.connect(location)
-    #cursor = conn.cursor()
