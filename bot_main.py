@@ -109,6 +109,34 @@ def get_admin_password(message):
         bot.send_message(message.from_user.id, 'Неверный пароль!');
 
 
+#функции для режима администратора
+        
+def is_admin(tid):#является ли пользователь с заднным айди админом
+    con = sqlite3.connect("bot_database.db")
+    cur = con.cursor()
+    sel_res = cur.execute('SELECT * FROM admin WHERE telegram_id=?', (tid,))
+    first_row = cur.fetchone()
+    return (first_row != None)
+
+
+@bot.message_handler(commands=['show_stats'])
+def login_stud_message(message):
+    if is_admin(message.from_user.id):
+        con = sqlite3.connect("bot_database.db")
+        cur = con.cursor()
+        result = ""
+        for row in cur.execute('SELECT surname, name, patronymic, points, misses, debts FROM students st, uchet uch WHERE st.id=uch.id'):
+            result = result + str(row)
+            result = result + "\n"
+        #print(result)
+        bot.send_message(message.from_user.id, result);
+        cur.close()
+        con.close()
+    else:
+        bot.send_message(message.from_user.id, "Ошибка - вы не администратор");
+    
+
+
 #отладочная функция..
 @bot.message_handler(content_types=['text'])
 def send_text(message):
@@ -124,6 +152,10 @@ def send_text(message):
     print("\n")
 
     for row in cur.execute('SELECT * FROM admin'):# where telegram_id=?', (str(message.from_user.id),)):
+        print(row)
+    print("\n")
+
+    for row in cur.execute('SELECT * FROM uchet'):# where telegram_id=?', (str(message.from_user.id),)):
         print(row)
     print("\n")
     

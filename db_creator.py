@@ -38,6 +38,11 @@ cursor.execute("""CREATE TABLE uchet
                """)
 conn.commit()
 
+uch = [(1, 99, 0, 1),
+       (3, 78, 1, 3)]
+cursor.executemany("INSERT INTO uchet(id, points, misses, debts) VALUES (?,?,?,?)", uch)
+conn.commit()
+
 # Создание таблицы в которой будет логин и пароль админа
 cursor.execute("""CREATE TABLE admin
                   (login text,
