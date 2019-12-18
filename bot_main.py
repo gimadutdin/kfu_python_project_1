@@ -1,4 +1,4 @@
-import telebot, sqlite3
+import telebot, sqlite3, hashlib
 
 name = '';
 surname = '';
@@ -62,6 +62,53 @@ def get_num_zach(message):
     cur.close()
     con.close()
     
+
+#Вход для администраторов
+def admin_login_exists(adm_login):
+    con = sqlite3.connect("bot_database.db")
+    cur = con.cursor()
+    sel_res = cur.execute('SELECT * FROM admin WHERE login=?', (adm_login,))
+    first_row = cur.fetchone()
+    return (first_row != None)
+
+def check_admin_password(adm_psw):
+    adm_psw_hash = hashlib.md5(adm_psw.encode("ascii")).hexdigest() 
+    con = sqlite3.connect("bot_database.db")
+    cur = con.cursor()
+    sel_res = cur.execute('SELECT * FROM admin WHERE password=?', (adm_psw_hash,))
+    first_row = cur.fetchone()
+    return (first_row != None)
+    
+@bot.message_handler(commands=['login_admin'])
+def login_stud_message(message):
+    bot.send_message(message.from_user.id, "Введите логин: ");
+    bot.register_next_step_handler(message, get_admin_login);
+
+def get_admin_login(message):
+    adm_login = message.text;
+    #проверяем верный ли логин
+    if admin_login_exists(adm_login):
+        bot.send_message(message.from_user.id, 'Введите пароль:');
+        bot.register_next_step_handler(message, get_admin_password);
+    else:
+        bot.send_message(message.from_user.id, 'Неверный логин');
+
+def get_admin_password(message):
+    adm_psw = message.text;
+    #проверяем верный ли пароль
+    if check_admin_password(adm_psw):
+        # привязываем телеграм айди собеседника к админской учетке
+        con = sqlite3.connect("bot_database.db")
+        cur = con.cursor()
+        cur.execute('UPDATE admin SET telegram_id=?', (message.from_user.id,))
+        con.commit()
+        cur.close()
+        con.close()
+        bot.send_message(message.from_user.id, 'Вы вошли в учетную запись администратора');
+    else:
+        bot.send_message(message.from_user.id, 'Неверный пароль!');
+
+
 #отладочная функция..
 @bot.message_handler(content_types=['text'])
 def send_text(message):
@@ -73,6 +120,10 @@ def send_text(message):
     print("\n")
 
     for row in cur.execute('SELECT * FROM joined'):# where telegram_id=?', (str(message.from_user.id),)):
+        print(row)
+    print("\n")
+
+    for row in cur.execute('SELECT * FROM admin'):# where telegram_id=?', (str(message.from_user.id),)):
         print(row)
     print("\n")
     

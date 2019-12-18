@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, hashlib
 
 conn = sqlite3.connect("bot_database.db")
 cursor = conn.cursor()
@@ -46,7 +46,7 @@ cursor.execute("""CREATE TABLE admin
                """)
 conn.commit()
 
-cursor.execute("INSERT INTO admin(login, password, telegram_id) VALUES (?,?,?)", ('administrator', 'qwerty123', 'undefined'))
+cursor.execute("INSERT INTO admin(login, password, telegram_id) VALUES (?,?,?)", ('administrator', hashlib.md5(b"qwerty123").hexdigest(), 'undefined'))
 conn.commit()
 
 #CREATE TABLE if not exists students
