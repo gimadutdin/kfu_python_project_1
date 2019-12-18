@@ -61,7 +61,20 @@ def get_num_zach(message):
         bot.send_message(message.from_user.id, 'Студента с такими данными не существует!');
     cur.close()
     con.close()
-    
+
+#Показ рейтинга студента
+@bot.message_handler(commands=['my_rating'])
+def login_stud_message(message):
+    con = sqlite3.connect("bot_database.db")
+    cur = con.cursor()
+    sel_res = cur.execute('SELECT points, misses, debts FROM uchet uch, joined jj WHERE jj.id=uch.id AND jj.telegram_id=?', (message.from_user.id,))
+    first_row = cur.fetchone()
+    if first_row != None:
+        bot.send_message(message.from_user.id, str(first_row));
+    else:
+        bot.send_message(message.from_user.id, "Ошибка - вы не записаны на курс");
+    cur.close()
+    con.close()
 
 #Вход для администраторов
 def admin_login_exists(adm_login):
